@@ -13890,22 +13890,6 @@ int hdd_wlan_startup(struct device *dev )
    {
       eHalStatus halStatus;
 
-      /* Overwrite the Mac address if config file exist */
-      if (VOS_STATUS_SUCCESS != hdd_update_mac_config(pHddCtx))
-      {
-         hddLog(VOS_TRACE_LEVEL_WARN,
-                "%s: Didn't overwrite MAC from config file",
-                __func__);
-      } else {
-         pr_info("%s: WLAN Mac Addr from config: %02X:%02X:%02X:%02X:%02X:%02X\n", WLAN_MODULE_NAME,
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[0],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[1],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[2],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[3],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[4],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[5]);
-      }
-
       /* Set the MAC Address Currently this is used by HAL to
        * add self sta. Remove this once self sta is added as
        * part of session open.
@@ -15894,6 +15878,8 @@ void hdd_indicate_mgmt_frame(tSirSmeMgmtFrameInd *frame_ind)
    hdd_context_t *hdd_ctx = NULL;
    hdd_adapter_t *adapter = NULL;
    v_CONTEXT_t vos_context = NULL;
+   struct ieee80211_mgmt *mgmt =
+           (struct ieee80211_mgmt *)frame_ind->frameBuf;
 
    /* Get the global VOSS context.*/
    vos_context = vos_get_global_context(VOS_MODULE_ID_SYS, NULL);
@@ -15909,6 +15895,12 @@ void hdd_indicate_mgmt_frame(tSirSmeMgmtFrameInd *frame_ind)
    {
        return;
    }
+
+   if (frame_ind->frameLen < ieee80211_hdrlen(mgmt->frame_control)) {
+        hddLog(LOGE, FL(" Invalid frame length"));
+        return;
+   }
+
    adapter = hdd_get_adapter_by_sme_session_id(hdd_ctx,
                                           frame_ind->sessionId);
 
