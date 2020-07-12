@@ -307,7 +307,12 @@ static int __hdd_netdev_notifier_call(struct notifier_block * nb,
                                          unsigned long state,
                                          void *ndev)
 {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
+   struct netdev_notifier_info *info = ndev;
+   struct net_device *dev = info->dev;
+#else
    struct net_device *dev = ndev;
+#endif
    hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
    hdd_context_t *pHddCtx;
 #ifdef WLAN_BTAMP_FEATURE
@@ -13890,22 +13895,6 @@ int hdd_wlan_startup(struct device *dev )
    {
       eHalStatus halStatus;
 
-      /* Overwrite the Mac address if config file exist */
-      if (VOS_STATUS_SUCCESS != hdd_update_mac_config(pHddCtx))
-      {
-         hddLog(VOS_TRACE_LEVEL_WARN,
-                "%s: Didn't overwrite MAC from config file",
-                __func__);
-      } else {
-         pr_info("%s: WLAN Mac Addr from config: %02X:%02X:%02X:%02X:%02X:%02X\n", WLAN_MODULE_NAME,
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[0],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[1],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[2],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[3],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[4],
-                 pHddCtx->cfg_ini->intfMacAddr[0].bytes[5]);
-      }
-
       /* Set the MAC Address Currently this is used by HAL to
        * add self sta. Remove this once self sta is added as
        * part of session open.
@@ -15811,7 +15800,8 @@ v_U8_t hdd_is_fw_logging_enabled(void)
     pHddCtx = vos_get_context(VOS_MODULE_ID_HDD,
                               vos_get_global_context(VOS_MODULE_ID_HDD, NULL));
 
-    return (pHddCtx && pHddCtx->cfg_ini->enableMgmtLogging);
+    return (pHddCtx && pHddCtx->cfg_ini->wlanLoggingEnable &&
+            pHddCtx->cfg_ini->enableMgmtLogging);
 }
 
 /*
@@ -15824,8 +15814,10 @@ v_U8_t hdd_is_fw_ev_logging_enabled(void)
     pHddCtx = vos_get_context(VOS_MODULE_ID_HDD,
                               vos_get_global_context(VOS_MODULE_ID_HDD, NULL));
 
-    return (pHddCtx && pHddCtx->cfg_ini->enableFWLogging);
+    return (pHddCtx && pHddCtx->cfg_ini->wlanLoggingEnable &&
+            pHddCtx->cfg_ini->enableFWLogging);
 }
+
 /*
  * API to find if there is any session connected
  */
